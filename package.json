@@ -1,0 +1,13 @@
+{
+  "name": "truepill",
+  "type": "commonjs",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "bin": {
+    "truepill": "index.js"
+  },
+  "dependencies": {
+    "inquirer": "^8.2.0"
+  }
+}
