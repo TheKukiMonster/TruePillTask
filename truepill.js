@@ -1,7 +1,11 @@
 'use strict';
 const inquirer = require('inquirer');
+const fileSystem = require('fs');
+const { off } = require('process');
 
-const formularyJSON = require('./Data/formulary.json')
+const formularyPath = "./Data/formulary.json";
+
+//const formularyJSON = require('./Data/formulary.json')
 
 const output = [];
 
@@ -112,19 +116,25 @@ async function addToJSONfile(adding, medName)
 
 function getMedicineList()
 {
-    try {
-        var medicineList = formularyJSON['medicines']
 
-    } catch (error) {
-        console.log("Error reading the formulary database.");
-        return;
-    }
-
-    for(var str in medicineList)
+    return new Promise( (resolve, reject) => 
     {
-        console.log("medicine:" + str)
-    }
-    return medicineList;
+            fileSystem.readFile(formularyPath, 'utf8', (err, formularyString) => {
+            if(err){
+                console.log("Error reading formulary: ", err)
+                reject(err)
+            }
+            try {
+                const formularyJSON = JSON.parse(formularyString)
+            //    console.log("form string: ", formularyJSON)
+                resolve(formularyJSON);
+
+            } catch(err) {
+                console.log("Error parsing formulary: ", err);
+                reject(err);
+            }
+        })
+    })
 
 }
 
@@ -137,10 +147,14 @@ async function fetchJSONfile(stock)
     //fetch the formulary
     if(!stock){
 
-        var medicineList = getMedicineList();
-        console.log(medicineList)
-        medicineList.forEach(medicine => console.log(medicine));
-        return;
+        var medicineList = await getMedicineList();
+        try{
+            medicineList['medicines'].forEach(medicine => console.log(medicine));
+        }
+        catch {
+            console.log("Error reading formulary");
+        }
+
     }
 }
 
