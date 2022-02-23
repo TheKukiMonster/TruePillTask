@@ -79,15 +79,83 @@ async function checkStockString(string)
 
     var formularyList = await getMedicineList();
 
+    //array used to store any valid medicines later, ready to be passed to writing function
+    var validMedicineArray = [];
+
     //Split the inputs at any punctuation
     var regex = new RegExp(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g);
+
     var medicineString = string.replace(regex,",");
     var medicineArray = medicineString.split(",");
 
     //medicineArray should now be split into multiple products with information seperated by spaces.
     //Replace any multiple spaces with single spaces, then split at spaces.
+    regex = new RegExp(/[\s]+/g);
+
+    medicineArray.forEach(function(medType, i) {
+        medicineArray[i] = medType.replace(regex, " ").trim().split(" ");
+    })
+
     //Each new valid stock will have 4 pieces of information:
     //Name, pack size, dosage, pack number
+    medicineArray.forEach(function(medType, i) {
+        if(medType.length != 4)
+        {
+            console.log("Error. Incomplete data for entry '" + medType[0] + "'")
+            medicineArray[i].splice();
+
+        }
+        else
+        {
+            var isValid = false;
+            //Check if the medicine name is in the formulary
+            console.log("medType: " + medType[0]);
+            formularyList['medicines'].forEach(medicineInFormulary => {
+                if(medType[0] === medicineInFormulary)
+                {
+                    isValid = true;
+                    console.log("switching isvalid to true")
+                }
+            })
+
+            //Check if all other inputs are numeric and exists in formulary
+            console.log(!isNaN(medType[1]))
+            console.log(!isNaN(medType[2]))
+            console.log(!isNaN(medType[3]))
+            console.log(isValid == true)
+
+
+            //Combining these comparators won't work here? Used nested ifs instead
+            if(isValid)
+            {
+                if( !isNaN(medType[1]) )
+                {
+                    if(!isNaN(medType[2]))
+                    {
+                        if(!isNaN(medType[3]))
+                        {
+                            console.log("Valid medicine Array: " + medType)
+                            validMedicineArray.push(medType)
+                        }
+                        else
+                        {
+                            console.log("Error adding stock for '" + medType[0] + "'. One or more of the data points were not numeric.");
+                        }  
+                    }
+                    else
+                    {
+                        console.log("Error adding stock for '" + medType[0] + "'. One or more of the data points were not numeric.");
+                    }  
+                }
+                else
+                {
+                    console.log("Error adding stock for '" + medType[0] + "'. One or more of the data points were not numeric.");
+                }  
+            }
+        }
+    })
+
+    return validMedicineArray
 
 }
 
@@ -129,8 +197,11 @@ async function mainMenu(){
 
                 inquirer.prompt(typeStockInputs).then((answers => {
 
-                    console.log(answers.stockInput);
-                    var isValidStocks = Promise.resolve(checkStockString())
+                    var isValidStocks = Promise.resolve(checkStockString(answers.stockInput))
+
+                    isValidStocks.then(function(medicineStockArray){
+                        addToJSONfile(1, medicineStockArray)
+                    })
 
 
                 }))
