@@ -1,10 +1,16 @@
 'use strict';
 const inquirer = require('inquirer');
+const clitable = require('cli-table');
+
 const fileSystem = require('fs');
+
 const { off } = require('process');
-const { Console } = require('console');
+const { Console, table } = require('console');
+const { Serializer } = require('v8');
+
 
 const formularyPath = "./Data/formulary.json";
+const stockPath = "./Data/stockControl.json";
 
 //const formularyJSON = require('./Data/formulary.json')
 
@@ -37,13 +43,20 @@ const typeMedicineName = [
     }
 ]
 
+const typeStockInputs = [
+    {
+        type: 'input',
+        name: 'stockInput',
+        message: 'Please enter the details of the stock(s) you wish to add. (Name, pack size, dosage, stock amount)'
+    }
+]
+
 
 //Check if the input medicine is valid, or already exists in the formulary
 async function checkString(string)
 {
 
     var formularyList = await getMedicineList();
-    var validMessage = "Valid Medicine";
 
     //Add code to split string at any punctuation and replace with commas
     var regex = new RegExp(/[.,\/#!$%\^&\*;:{}=\-_`~()\s]/g);
@@ -58,6 +71,23 @@ async function checkString(string)
     var validMedicines = await CheckAgainstFormulary(medicineArray, formularyList);
 
     return validMedicines;
+
+}
+
+async function checkStockString(string)
+{
+
+    var formularyList = await getMedicineList();
+
+    //Split the inputs at any punctuation
+    var regex = new RegExp(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g);
+    var medicineString = string.replace(regex,",");
+    var medicineArray = medicineString.split(",");
+
+    //medicineArray should now be split into multiple products with information seperated by spaces.
+    //Replace any multiple spaces with single spaces, then split at spaces.
+    //Each new valid stock will have 4 pieces of information:
+    //Name, pack size, dosage, pack number
 
 }
 
@@ -77,11 +107,11 @@ async function mainMenu(){
 
             case 'Check the stock tables':
                 console.log("Picked check stock tables"); 
+                fetchJSONfile(1);
                 break;          
 
             case 'Add medicine to formulary':
                 console.log("Picked add medicine to formulary");
-                var medicineName
                 inquirer.prompt(typeMedicineName).then((answers => {   
 
                     console.log(answers.medNameInput);
@@ -94,8 +124,19 @@ async function mainMenu(){
                 }));
                 break;
 
-            case 'Add medicine to formulary':
+            case 'Add medicine to stock tables':
                 console.log("Picked add medicine to stock tables");
+
+                inquirer.prompt(typeStockInputs).then((answers => {
+
+                    console.log(answers.stockInput);
+                    var isValidStocks = Promise.resolve(checkStockString())
+
+
+                }))
+
+
+
                 break;
         }
 
@@ -170,12 +211,6 @@ async function addToJSONfile(stock, medName)
             }
         })
     }
-
-
-
-
-
-
 }
 
 function getMedicineList()
@@ -202,6 +237,27 @@ function getMedicineList()
 
 }
 
+function getStockList()
+{
+    return new Promise( (resolve, reject) => 
+    {
+
+        fileSystem.readFile(stockPath, 'utf8', (err, stockString) => {
+            if(err){
+                console.log("Error reading stock list: ", err)
+                reject(err)
+            }
+            try {
+                const stockJSON = JSON.parse(stockString)
+                resolve(stockJSON['stock']);
+            } catch(err) {
+                console.log("Error parsing stock list: ", err);
+                reject(err);
+            }
+        })
+    })
+}
+
 //Fetches the relevant json file
 //adding is a boolean to decide which file to fetch. 
 //0 is formulary
@@ -218,6 +274,50 @@ async function fetchJSONfile(stock)
         catch {
             console.log("Error reading formulary");
         }
+
+    }
+    else{
+
+        var stockList = await getStockList();
+        try{
+
+            var stockTable = new clitable({head: ['Medicine', "Pack Size", "Dosage", "Stock Number"] }) 
+
+            //Get a list of the medicine name so we can loop through their respective packs
+            var medicines = stockList['medicines']
+
+            var rowHeader = "";
+            var rowJSON = {}
+            
+            for (var medicineName in medicines)
+            {
+                //Set medicine as header for only one of the medicines listings for clearer output
+                // | exampleMedicine | x | y | z |
+                // |                 | a | b | c |
+                
+                rowHeader = medicineName;
+
+                medicines[medicineName].forEach(packType => {
+
+                    //Create a JSON out of stock data to add to the stock table's output
+                    rowJSON[rowHeader] = Object.values(packType);
+                    stockTable.push(rowJSON)
+
+                    //Reset with blank medicine header and clean JSON data 
+                    rowJSON = {}
+                    rowHeader = ""
+
+                })
+            }
+
+            console.log(stockTable.toString())
+
+        }
+        catch {
+            console.log("Error reading stocklist")
+        }
+
+
 
     }
 }

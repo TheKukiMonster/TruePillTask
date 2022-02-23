@@ -8,6 +8,7 @@
     "truepill": "index.js"
   },
   "dependencies": {
+    "cli-table": "^0.3.11",
     "inquirer": "^8.2.0"
   }
 }
