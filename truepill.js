@@ -2,6 +2,7 @@
 const inquirer = require('inquirer');
 const fileSystem = require('fs');
 const { off } = require('process');
+const { Console } = require('console');
 
 const formularyPath = "./Data/formulary.json";
 
@@ -41,23 +42,22 @@ const typeMedicineName = [
 async function checkString(string)
 {
 
-    var medicineList = getMedicineList();
-    console.log(medicineList)
+    var formularyList = await getMedicineList();
     var validMessage = "Valid Medicine";
 
-    if(string.length == 0)
-    {
-        return "Error. Please enter a medicine name"; 
-    }
+    //Add code to split string at any punctuation and replace with commas
+    var regex = new RegExp(/[.,\/#!$%\^&\*;:{}=\-_`~()\s]/g);
+    
+    //Replace any punctuation with commas, split into an array, then clear whitespace to loop through for validation
+    var medicineString = string.replace(regex,",");
+    var medicineArray = medicineString.split(",");
 
-    medicineList.forEach(function(medicine) {
-        if(medicine === string)
-        {
-            validMessage = "Error. Medicine already exists in formulary";
-        }
-    })
 
-    return validMessage;
+    medicineArray = medicineArray.map(s => s.trim());
+
+    var validMedicines = await CheckAgainstFormulary(medicineArray, formularyList);
+
+    return validMedicines;
 
 }
 
@@ -87,8 +87,8 @@ async function mainMenu(){
                     console.log(answers.medNameInput);
                     var isValidName = Promise.resolve(checkString(answers.medNameInput));
 
-                    isValidName.then(function(message) {
-                        console.log(message);
+                    isValidName.then(function(medicineNameArray) {
+                        addToJSONfile(0, medicineNameArray)
                     })
 
                 }));
@@ -102,15 +102,79 @@ async function mainMenu(){
     }
     )};
 
-async function getMedicineName(){
+function CheckAgainstFormulary(medicineArray, formularyList)
+{
+    return new Promise( (resolve) => 
+    {
+        var validMedicines = []
+        medicineArray.forEach(medicineAdded => {
 
+     //       console.log("Checking isValid: " + medicineAdded)
+            var isValid = true;       
 
+            if(medicineAdded.length == 0)
+            { 
+                isValid = false;
+            }
+            
+            formularyList['medicines'].forEach(medicineInFormulary => {
+                
+           //     console.log("Checking against: " + medicineInFormulary);
     
+                if(medicineAdded === medicineInFormulary)
+                {
+                    console.log("Error. " + medicineAdded + " already exists in formulary");
+                    isValid = false;
+                }
+
+            })
+
+            if(isValid)
+            {
+                validMedicines.push(medicineAdded);
+            }
+    
+        });  
+        
+        resolve(validMedicines);
+
+    })
 }
 
 //Adds to the relevant json file
-async function addToJSONfile(adding, medName)
+//0 is adding to formulary
+//1 is adding to stock listings 
+async function addToJSONfile(stock, medName)
 {
+
+    if(!stock)
+    {
+        
+        var currFormulary = await getMedicineList();
+
+        medName.forEach(element => {
+            console.log("adding to json: " + element);
+            currFormulary['medicines'].push(element);
+        })
+
+        console.log(currFormulary)
+
+        var newFormulary = JSON.stringify(currFormulary);
+        fileSystem.writeFile(formularyPath, newFormulary, err => {
+            if (err) {
+                console.log("Error writing file", err);
+            }
+            else
+            {
+                console.log("Successfully updated formulary")
+            }
+        })
+    }
+
+
+
+
+
 
 }
 
@@ -158,17 +222,5 @@ async function fetchJSONfile(stock)
     }
 }
 
-async function parseJSON(json){
-
-    keyList = json.keys;
-
-    keyList.forEach(element => {
-        console.log(element)
-    });
-
-    //Decide what to do with JSON based on tags
-
-
-}
 
 mainMenu();
