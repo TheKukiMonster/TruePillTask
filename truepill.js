@@ -1,23 +1,13 @@
 'use strict';
 const inquirer = require('inquirer');
 const clitable = require('cli-table');
+const colours = require('colors');
 
 const fileSystem = require('fs');
-
-const { off } = require('process');
-const { Console, table } = require('console');
-const { Serializer } = require('v8');
 
 
 const formularyPath = "./Data/formulary.json";
 const stockPath = "./Data/stockControl.json";
-
-//const formularyJSON = require('./Data/formulary.json')
-
-const output = [];
-
-
-console.log("Welcome to the pharmacy management system.")
 
 const mainMenuQuestions = [
 
@@ -30,7 +20,7 @@ const mainMenuQuestions = [
           {name: 'Check the stock tables'},
           new inquirer.Separator(),
           {name: 'Add medicine to formulary'},
-          {name: 'Add medicine to stock tables'}
+          {name: 'Add to or update stock tables'}
         ]
     }
 ]
@@ -47,7 +37,7 @@ const typeStockInputs = [
     {
         type: 'input',
         name: 'stockInput',
-        message: 'Please enter the details of the stock(s) you wish to add or update. (Name, pack size, dosage, stock amount)'
+        message: 'Please enter the details of the stock(s) you wish to add or update. Add multiple medicines by seperating with commas => Name packsize dosage stock amount'
     }
 ]
 
@@ -160,56 +150,57 @@ async function checkStockString(string)
 }
 
 async function mainMenu(){
-    inquirer.prompt(mainMenuQuestions).then((answers) => {
-     //   output.push(answers.mainMenu);
 
-        //Decide what to do based on input
-        
-        //List formulary
-        switch(answers.mainMenu) {
+        inquirer.prompt(mainMenuQuestions).then((answers) => {
+            //   output.push(answers.mainMenu);
+       
+               //Decide what to do based on input
+               
+               //List formulary
+               switch(answers.mainMenu) {
+       
+                   case 'Check the formulary':
+                       console.log("Checking formulary...");
+                       fetchJSONfile(0);
+                       break;
+       
+                   case 'Check the stock tables':
+                       console.log("Checking stock tables"); 
+                       fetchJSONfile(1);
+                       break;          
+       
+                   case 'Add medicine to formulary':
+                       
+                       inquirer.prompt(typeMedicineName).then((answers => {   
+       
+                           var isValidName = Promise.resolve(checkString(answers.medNameInput));
+       
+                           isValidName.then(function(medicineNameArray) {
+                               addToJSONfile(0, medicineNameArray)
+                           })
+       
+                       }));
+                       break;
+       
+                   case 'Add medicine to stock tables':
+       
+                       inquirer.prompt(typeStockInputs).then((answers => {
+       
+                           var isValidStocks = Promise.resolve(checkStockString(answers.stockInput))
+       
+                           isValidStocks.then(function(medicineStockArray){
+                               addToJSONfile(1, medicineStockArray)
+                           })
+       
+       
+                       }))
+       
+                       break;
+               }
+           }
+        )
+}
 
-            case 'Check the formulary':
-                //console.log("Picked check formulary");
-                fetchJSONfile(0);
-                break;
-
-            case 'Check the stock tables':
-                console.log("Picked check stock tables"); 
-                fetchJSONfile(1);
-                break;          
-
-            case 'Add medicine to formulary':
-                console.log("Picked add medicine to formulary");
-                inquirer.prompt(typeMedicineName).then((answers => {   
-
-                    var isValidName = Promise.resolve(checkString(answers.medNameInput));
-
-                    isValidName.then(function(medicineNameArray) {
-                        addToJSONfile(0, medicineNameArray)
-                    })
-
-                }));
-                break;
-
-            case 'Add medicine to stock tables':
-                console.log("Picked add medicine to stock tables");
-
-                inquirer.prompt(typeStockInputs).then((answers => {
-
-                    var isValidStocks = Promise.resolve(checkStockString(answers.stockInput))
-
-                    isValidStocks.then(function(medicineStockArray){
-                        addToJSONfile(1, medicineStockArray)
-                    })
-
-
-                }))
-
-                break;
-        }
-
-    }
-    )};
 
 function CheckAgainstFormulary(medicineArray, formularyList)
 {
@@ -347,7 +338,6 @@ function writeToFile(filePath, newJSON, isFormulary)
                 //Print the new stock table
                 fetchJSONfile(1);
             }
-
         }
     })
 }
@@ -406,8 +396,13 @@ async function fetchJSONfile(stock)
     if(!stock){
 
         var medicineList = await getMedicineList();
+        
+        var stockTable = new clitable({head: ['Medicine List'] }) 
+        
         try{
-            medicineList['medicines'].forEach(medicine => console.log(medicine));
+            medicineList['medicines'].forEach(medicine =>
+                console.log(colours.green(medicine))
+            )
         }
         catch {
             console.log("Error reading formulary");
@@ -457,10 +452,10 @@ async function fetchJSONfile(stock)
         catch {
             console.log("Error reading stock list")
         }
-
-
-
     }
 }
 
-mainMenu();
+console.log("Welcome to the pharmacy management system");
+mainMenu();   
+
+
