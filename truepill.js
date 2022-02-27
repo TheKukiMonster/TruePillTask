@@ -1,13 +1,41 @@
 'use strict';
+
+
+//Build a table of functions to export for mocha testing
+module.exports = {
+    checkString: function(testString){
+        return checkString(testString)
+    },
+    switchToTesting: function(){
+        return switchToTesting();
+    },
+    getMedicineList: function(){
+        return getMedicineList();
+    },
+    addToJSONfile: function(stock, medicines){
+        return addToJSONfile(stock, medicines)
+    },
+    checkStockString: function(testString){
+        return checkStockString(testString)
+    }
+}
+
+
+//
+
 const inquirer = require('inquirer');
 const clitable = require('cli-table');
 const colours = require('colors');
 
 const fileSystem = require('fs');
+const { resolve } = require('path');
 
 
-const formularyPath = "./Data/formulary.json";
-const stockPath = "./Data/stockControl.json";
+var formularyPath = "./Data/formulary.json";
+var stockPath = "./Data/stockControl.json";
+
+var testFormularyPath = "./Data/formularyTesting.json"
+var testStockPath = "./Data/stockControlTesting.json";
 
 const mainMenuQuestions = [
 
@@ -41,10 +69,18 @@ const typeStockInputs = [
     }
 ]
 
+async function switchToTesting()
+{
+    formularyPath = testFormularyPath;
+    stockPath = testStockPath;
+    return stockPath;
+}
+
 
 //Check if the input medicine is valid, or already exists in the formulary
 async function checkString(string)
 {
+
 
     var formularyList = await getMedicineList();
 
@@ -67,6 +103,7 @@ async function checkString(string)
 async function checkStockString(string)
 {
 
+    console.log(string);
     var formularyList = await getMedicineList();
 
     //array used to store any valid medicines later, ready to be passed to writing function
@@ -89,9 +126,11 @@ async function checkStockString(string)
     //Each new valid stock will have 4 pieces of information:
     //Name, pack size, dosage, pack number
     medicineArray.forEach(function(medType, i) {
-        
+
+        //If not enough arguments, remove this medicine data from the array
         if(medType.length != 4)
         {
+
             console.log("Error. Incomplete data for entry '" + medType[0] + "'")
             medicineArray[i].splice();
 
@@ -144,7 +183,7 @@ async function checkStockString(string)
             }
         }
     })
-
+    console.log(validMedicineArray)
     return validMedicineArray
 
 }
@@ -242,7 +281,7 @@ function CheckAgainstFormulary(medicineArray, formularyList)
 function PascalConversion(string)
 {
     try {
-        var newString = string.split('')
+        var newString = string.toLowerCase().split('')
         newString[0] = newString[0].toUpperCase()
         return newString.join('')
     }
@@ -255,16 +294,17 @@ function PascalConversion(string)
 }
 
 //Adds to the relevant json file
+//stock value:
 //0 is adding to formulary
 //1 is adding to stock listings 
 async function addToJSONfile(stock, addedJSON)
 {
+
     //Update the formulary
     if(!stock)
     {
         
         var currFormulary = await getMedicineList();
-
         addedJSON.forEach(element => {
             currFormulary['medicines'].push(element);
         })
@@ -326,7 +366,9 @@ async function addToJSONfile(stock, addedJSON)
 
         
         //Write the new stocktable as new stockControl.json file. 0 passed as isFormulary bool.
-        writeToFile(stockPath, stockTable, 0)
+        var success = writeToFile(stockPath, stockTable, 0)
+        return success;
+
     }
 }
 
@@ -336,6 +378,7 @@ function writeToFile(filePath, newJSON, isFormulary)
     fileSystem.writeFile(filePath, newFile, err => {
         if(err) {
             console.log("Error writing file")
+            reject("false");
         }
         else
         {
@@ -350,6 +393,7 @@ function writeToFile(filePath, newJSON, isFormulary)
                 fetchJSONfile(1);
             }
         }
+        return("true");
     })
 }
 

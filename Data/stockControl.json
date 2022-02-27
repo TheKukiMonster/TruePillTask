@@ -1,1 +1,1 @@
-{"medicines":{}}
+{"medicines":{"Paracetamol":[{"packsize":1,"dosage":2,"stock":3},{"packsize":4,"dosage":5,"stock":6},{"packsize":11,"dosage":12,"stock":26}],"Ibuprofen":[{"packsize":1,"dosage":2,"stock":6},{"packsize":7,"dosage":8,"stock":9},{"packsize":9,"dosage":8,"stock":14}]}}
