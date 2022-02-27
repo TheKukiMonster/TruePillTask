@@ -29,7 +29,7 @@ const typeMedicineName = [
     {
         type: 'input',
         name: 'medNameInput',
-        message: 'Please enter the name of the medicine you wish to add to the formulary...'
+        message: 'Please enter the name of the medicine(s) you wish to add to the formulary...'
     }
 ]
 
@@ -37,7 +37,7 @@ const typeStockInputs = [
     {
         type: 'input',
         name: 'stockInput',
-        message: 'Please enter the details of the stock(s) you wish to add or update. Add multiple medicines by seperating with commas => Name packsize dosage stock amount'
+        message: 'Please enter the details of the stock(s) you wish to add or update. Format: Name packsize dosage stockamount. Add multiple by seperating with \',\'.'
     }
 ]
 
@@ -89,6 +89,7 @@ async function checkStockString(string)
     //Each new valid stock will have 4 pieces of information:
     //Name, pack size, dosage, pack number
     medicineArray.forEach(function(medType, i) {
+        
         if(medType.length != 4)
         {
             console.log("Error. Incomplete data for entry '" + medType[0] + "'")
@@ -100,7 +101,6 @@ async function checkStockString(string)
 
             //Convert to Pascal to force input uniformity and for nicer reading
             medType[0] = PascalConversion(medType[0]);
-            
             var isValid = false;
 
             //Check if the medicine name is in the formulary
@@ -109,11 +109,11 @@ async function checkStockString(string)
                 {
                     isValid = true;
                 }
-                else
-                {
-                    console.log(medType[0] + " does not exist in the formulary. Try again once it has been added to the formulary.")
-                }
             })
+            if(!isValid)
+            {
+                console.log(medType[0] + " does not exist in the formulary. Try again once it has been added to the formulary.")
+            }
 
             //Check if all other inputs are numeric and exists in formulary
             //Combining these comparators won't work here? Used nested ifs instead
@@ -152,7 +152,6 @@ async function checkStockString(string)
 async function mainMenu(){
 
         inquirer.prompt(mainMenuQuestions).then((answers) => {
-            //   output.push(answers.mainMenu);
        
                //Decide what to do based on input
                
@@ -165,12 +164,11 @@ async function mainMenu(){
                        break;
        
                    case 'Check the stock tables':
-                       console.log("Checking stock tables"); 
+                       console.log("Checking stock tables..."); 
                        fetchJSONfile(1);
                        break;          
        
                    case 'Add medicine to formulary':
-                       
                        inquirer.prompt(typeMedicineName).then((answers => {   
        
                            var isValidName = Promise.resolve(checkString(answers.medNameInput));
@@ -182,8 +180,8 @@ async function mainMenu(){
                        }));
                        break;
        
-                   case 'Add medicine to stock tables':
-       
+                   case 'Add to or update stock tables':
+                       
                        inquirer.prompt(typeStockInputs).then((answers => {
        
                            var isValidStocks = Promise.resolve(checkStockString(answers.stockInput))
@@ -220,7 +218,6 @@ function CheckAgainstFormulary(medicineArray, formularyList)
             }
             
             formularyList['medicines'].forEach(medicineInFormulary => {
-
                 //Compare strings in upper case so input mistakes do not matter
                 if(medicineAdded.toUpperCase() === medicineInFormulary.toUpperCase())
                 {
@@ -244,10 +241,16 @@ function CheckAgainstFormulary(medicineArray, formularyList)
 
 function PascalConversion(string)
 {
-
+    try {
         var newString = string.split('')
         newString[0] = newString[0].toUpperCase()
         return newString.join('')
+    }
+    catch
+    {
+        return "";
+    }   
+
 
 }
 
@@ -289,6 +292,8 @@ async function addToJSONfile(stock, addedJSON)
                 if(element[0] in stockTable['medicines'])
                 {  
 
+                    var updatingStock = false;
+
                     //Get the box array of each type of pack for this medicine
                     var thisMedicinePacksJSON = stockTable['medicines'][element[0]]
 
@@ -297,11 +302,17 @@ async function addToJSONfile(stock, addedJSON)
                         if(box['packsize'] == element[1] )
                             if(box['dosage'] == element[2]){
                                 box['stock'] = parseInt(box['stock']) + parseInt(element[3]);
+                                updatingStock = true;
+
                             }
                     })
 
-                    newPackJSON = packData 
-                    stockTable['medicines'][element[0]].push(newPackJSON)
+                    if(!updatingStock)
+                    {
+                        newPackJSON = packData 
+                        stockTable['medicines'][element[0]].push(newPackJSON)
+                    }
+
                 }
                 //Must create new key in ['medicines'] for the medicine as it currently has no stock listing
                 else
