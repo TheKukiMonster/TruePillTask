@@ -72,15 +72,19 @@ describe('TruePill unit tests', function(){
         
         })
 
-        it("checkStockString should reject 'Amoxcillin 1 2 3, Ibuprofen 1 2 3' as an valid input, but only pass Ibuprofen", async() => {
+        it("checkStockString should accept 'Amoxcillin 1 2 3, Ibuprofen 1 2 3' as a valid input, but only pass Ibuprofen", async() => {
             
             var validMedicines = await checkStockString("Amoxicillin 1 2 3, Ibuprofen 1 2 3");
             expect(["Ibuprofen", "1", "2", "3"]).to.eql(validMedicines[0])
         
         })
+
+        it("checkStockString should accept 'Amoxcillin 1 2 3, Ibuprofen 1 d 3, Ibuprofen 1 2, Codeine 1 2 3' as a valid input, but only pass Codeine", async() => {
+            
+            var validMedicines = await checkStockString("Amoxcillin 1 2 3, Ibuprofen 1 d 3, Ibuprofen 1 2, Codeine 1 2 3");
+            expect(["Codeine", "1", "2", "3"]).to.eql(validMedicines[0])
+        
+        })
     
     })
-
-
 })
-
