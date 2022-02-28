@@ -12,8 +12,8 @@ module.exports = {
     getMedicineList: function(){
         return getMedicineList();
     },
-    addToJSONfile: function(stock, medicines){
-        return addToJSONfile(stock, medicines)
+    constructJSON: function(stock, medicines){
+        return constructJSON(stock, medicines)
     },
     checkStockString: function(testString){
         return checkStockString(testString)
@@ -103,7 +103,6 @@ async function checkString(string)
 async function checkStockString(string)
 {
 
-    console.log(string);
     var formularyList = await getMedicineList();
 
     //array used to store any valid medicines later, ready to be passed to writing function
@@ -183,7 +182,6 @@ async function checkStockString(string)
             }
         }
     })
-    console.log(validMedicineArray)
     return validMedicineArray
 
 }
@@ -213,7 +211,7 @@ async function mainMenu(){
                            var isValidName = Promise.resolve(checkString(answers.medNameInput));
        
                            isValidName.then(function(medicineNameArray) {
-                               addToJSONfile(0, medicineNameArray)
+                               constructJSON(0, medicineNameArray)
                            })
        
                        }));
@@ -226,7 +224,7 @@ async function mainMenu(){
                            var isValidStocks = Promise.resolve(checkStockString(answers.stockInput))
        
                            isValidStocks.then(function(medicineStockArray){
-                               addToJSONfile(1, medicineStockArray)
+                               constructJSON(1, medicineStockArray)
                            })
        
        
@@ -297,7 +295,7 @@ function PascalConversion(string)
 //stock value:
 //0 is adding to formulary
 //1 is adding to stock listings 
-async function addToJSONfile(stock, addedJSON)
+async function constructJSON(stock, addedJSON)
 {
 
     //Update the formulary
